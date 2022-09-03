@@ -29,8 +29,6 @@ def test_predict():
     assert predict(test, model)[0] == 1
     assert predict(test, model)[1] == 0
 
-if __name__ == '__main__':
-    test_predict()
 
 # model("https://tfhub.dev/google/universal-sentence-encoder/4", 0.6, 8)
 # optimizer=tf.keras.optimizers.Adam(learning_rate=0.0001),
