@@ -16,41 +16,28 @@ from sklearn.metrics import accuracy_score
 
 
 
-data = pd.read_csv('train1.csv')
-print(data.columns)
-print(data.head())
-print(data.describe())
-print(data.nunique())
-print(data['target'].value_counts())
-test_data = pd.read_csv('test1.csv')
-print(test_data.columns)
+
+
 
 # split training data into training set and validation set at 80 vs 20
-training_sentences, val_sentences, training_labels, val_labels = \
-    train_test_split(data['text'], data['target'], test_size=0.3)
-print(training_labels.value_counts())
+
 
 '''
 training_labels_final = tf.keras.utils.to_categorical(training_labels,
                                                       num_classes=2)
 val_labels_final = tf.keras.utils.to_categorical(val_labels, num_classes=2)
 '''
-hub_layer = hub.KerasLayer(
-    "https://tfhub.dev/google/universal-sentence-encoder/4",  input_shape=[],
-    dtype=tf.string, trainable=True)
 
-# build a model
-model = tf.keras.Sequential()
-model.add(hub_layer)
-model.add(tf.keras.layers.Dropout(0.5))
-model.add(tf.keras.layers.Dense(8, activation='relu'))
-model.add(tf.keras.layers.Dropout(0.5))
-model.add(tf.keras.layers.Dense(1, activation='sigmoid'))
+def model(site, dropout_rate, dense_layer):
+    hub_layer = hub.KerasLayer(site,  input_shape=[], dtype=tf.string, trainable=True)
+    model = tf.keras.Sequential()
+    model.add(hub_layer)
+    model.add(tf.keras.layers.Dropout(dropout_rate))
+    model.add(tf.keras.layers.Dense(dense_layer, activation='relu'))
+    model.add(tf.keras.layers.Dropout(dropout_rate))
+    model.add(tf.keras.layers.Dense(1, activation='sigmoid'))
+    return model
 
-model.compile(loss='binary_crossentropy', \
-              optimizer=tf.keras.optimizers.Adam(learning_rate=0.0003),
-            #optimizer=tf.keras.optimizers.Adam(learning_rate),
-             metrics=['accuracy'])
 
 # compute class weights
 def compute_class_weights(labels):
@@ -63,26 +50,27 @@ def compute_class_weights(labels):
                                         labels.value_counts()[i]), 2)
     return class_weights
 
-class_weights = compute_class_weights(training_labels)
-print("Class weights computed: ", class_weights)
+#class_weights = compute_class_weights(training_labels)
+#print("Class weights computed: ", class_weights)
 
 
-# early stopping callback
-callback = tf.keras.callbacks.EarlyStopping(monitor='val_accuracy', patience=2)
+def save_file(file_name, model):
+    test_data = pd.read_csv(file_name)
+    labels = model.predict(test_data['text'])
 
-num_epochs = 50
+    del test_data['text']
+    del test_data['keyword']
+    del test_data['location']
 
-history = model.fit(training_sentences, training_labels, batch_size=32,
-    epochs=num_epochs, class_weight=class_weights, validation_data=(
-        val_sentences, val_labels), callbacks=[callback])
+    test_data['target'] = np.rint(labels).astype(int)
+    test_data.to_csv('sub2.csv', index=False)
 
-# evaluate validation set
-loss, test_acc = model.evaluate(val_sentences, val_labels)
-print('Test loss: ', loss)
-print('Test accuracy: ', test_acc)
+def predict(sent, model):
+    pred = model.predict(sent)
+    return np.rint(pred).astype(int)
 
 # process training data by lowering case and removing stopwords and punctuation
-'''
+
 
 def bag_of_words(sent, sent1):  # bag_of_word vectorizer
     vectorizer = CountVectorizer()
@@ -91,11 +79,23 @@ def bag_of_words(sent, sent1):  # bag_of_word vectorizer
     return x, val_x
 
 
-def tfidf_vectorizer(sent, sent1):  #tf-idf vectorizer
+def tfidf_vectorizer(sent, sent1, sent2):  #tf-idf vectorizer
     vectorizer = TfidfVectorizer()
     x = vectorizer.fit_transform(sent).toarray()
     val_x = vectorizer.transform(sent1).toarray()
-    return x, val_x
+    test_x = vectorizer.transform(sent2).toarray()
+    return x, val_x, test_x
+
+def tokenize_padd(sentences, vocab_size, oov_tok, max_length,
+                      padding_type, trunc_type):
+    tokenizer = Tokenizer(num_words = vocab_size, oov_token=oov_tok)
+    tokenizer.fit_on_texts(sentences)
+    word_index = tokenizer.word_index
+    sequences = tokenizer.texts_to_sequences(sentences)
+    padded = pad_sequences(sequences, maxlen=max_length,
+                               padding=padding_type,
+                               truncating=trunc_type)
+    return padded
 
 # to oversample minority class using SMOTE
 def oversample_smote(padded, labels):
@@ -106,40 +106,22 @@ def oversample_smote(padded, labels):
     print(counter)
     return oversample_padded, labels_final
 
-x, test_x = tfidf_vectorizer(training_sentences, val_sentences)
-x, training_labels = oversample_smote(x, training_labels)
-best = best_model(models, x, training_labels, test_x, val_labels, 'accuracy')
-best.fit(x, training_labels)
-pred = best.predict(test_x)
-f1 = f1_score(val_labels, pred)
-print("F1 score - test: ", f1)
 
 
-
-
-
-
-
-
-# compute class weights
-def compute_class_weights(labels):
-    n_samples = len(labels)
-    n_classes = len(labels.unique())
-    class_weights = {}
-    class_names = labels.value_counts().index.tolist()
-    for i in range(len(labels.value_counts())):
-        class_weights[class_names[i]] = round(n_samples/(n_classes *
-                                            labels.value_counts()[i]), 2)
-    return class_weights
-
-# double layer bidirectional GRU
-
-
-#compute class weight
-class_weights = compute_class_weights(training_labels)
-print("Class weights computed: ", class_weights)
-
-# early stopping callback
-callback = tf.keras.callbacks.EarlyStopping(monitor='val_loss', patience=2)
-
-'''
+def define_gru(dropout_rate, vocab_size, embedding_dim, max_length):
+    model = tf.keras.Sequential([
+        tf.keras.layers.Embedding(vocab_size, embedding_dim,
+                                  input_length=max_length),
+        tf.keras.layers.BatchNormalization(),  # Batch Normalization
+        #tf.keras.layers.Dropout(dropout_rate),
+        tf.keras.layers.Bidirectional(tf.keras.layers.GRU(embedding_dim)),
+        tf.keras.layers.BatchNormalization(),  # Batch Normalization
+        #tf.keras.layers.Dropout(dropout_rate),
+        tf.keras.layers.Dense(embedding_dim, activation='elu',
+                              kernel_initializer='he_normal',
+                              kernel_regularizer=tf.keras.regularizers.l2(
+                                  0.01)),
+        tf.keras.layers.BatchNormalization(),  # Batch Normalization
+        #tf.keras.layers.Dropout(dropout_rate),
+        tf.keras.layers.Dense(1, activation='sigmoid')])
+    return model
