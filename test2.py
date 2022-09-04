@@ -1,5 +1,5 @@
 
-from app.process import *
+from process import *
 
 def test_predict():
     data = pd.read_csv('train1.csv')
