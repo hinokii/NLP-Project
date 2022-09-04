@@ -1,17 +1,13 @@
 import pandas as pd
 import tensorflow as tf
-from tensorflow.keras.preprocessing.text import Tokenizer
-from tensorflow.keras.preprocessing.sequence import pad_sequences
+
 import tensorflow_hub as hub
 import string
 import numpy as np
 import pandas as pd
-import matplotlib.pyplot as plt
-import nltk
+
 from sklearn.model_selection import train_test_split
-from sklearn.metrics import f1_score
-from ct22_task1_base import *
-from sklearn.metrics import accuracy_score
+
 
 
 
