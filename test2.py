@@ -21,7 +21,7 @@ def test_predict():
         epochs=num_epochs, validation_data=(
         val_sentences, val_labels), callbacks=[callback])
 
-    save_file('test1.csv', model)
+    #save_file('test1.csv', model)
 
     test = []
     test.append(['a turnado hit the area and many people had to evacuate. the Turnado destroyed many houses and people lost homes'])
