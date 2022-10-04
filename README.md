@@ -18,4 +18,4 @@ https://tfhub.dev/google/tf2-preview/gnews-swivel-20dim/1
 
 With few lines of code, the F1 score of 0.80784 has been achieved so far. 
 
-I include test2.py file to test the model to see if it makes correct predictions on a couple of example sentences. I set up the automated Pytest with GitHub actions, which all passed. 
+I include test.py file to test the model to see if it makes correct predictions on a couple of example sentences. I set up the automated Pytest with GitHub actions, which all passed. 

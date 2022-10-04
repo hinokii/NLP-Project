@@ -1,13 +1,10 @@
 import pandas as pd
 import tensorflow as tf
-
 import tensorflow_hub as hub
 import string
 import numpy as np
 import pandas as pd
-
 from sklearn.model_selection import train_test_split
-
 
 def create_model(site, dropout_rate, dense_layer):
     hub_layer = hub.KerasLayer(site,  input_shape=[], dtype=tf.string, trainable=True)
@@ -18,7 +15,6 @@ def create_model(site, dropout_rate, dense_layer):
     model.add(tf.keras.layers.Dropout(dropout_rate))
     model.add(tf.keras.layers.Dense(1, activation='sigmoid'))
     return model
-
 
 def save_file(file_name, model):
     test_data = pd.read_csv(file_name)
