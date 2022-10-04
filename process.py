@@ -9,21 +9,6 @@ import pandas as pd
 from sklearn.model_selection import train_test_split
 
 
-
-
-
-
-
-
-# split training data into training set and validation set at 80 vs 20
-
-
-'''
-training_labels_final = tf.keras.utils.to_categorical(training_labels,
-                                                      num_classes=2)
-val_labels_final = tf.keras.utils.to_categorical(val_labels, num_classes=2)
-'''
-
 def create_model(site, dropout_rate, dense_layer):
     hub_layer = hub.KerasLayer(site,  input_shape=[], dtype=tf.string, trainable=True)
     model = tf.keras.Sequential()
