@@ -2,6 +2,7 @@ import pandas as pd
 import numpy as np
 import tensorflow as tf
 import tensorflow_hub as hub
+from sklearn.model_selection import train_test_split
 
 
 def create_model(site, dropout_rate, dense_layer):
